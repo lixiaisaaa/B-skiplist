@@ -188,82 +188,93 @@ public:
         return false;
     }
 
-    std::vector<bool> range_query(int _start_key, int _end_key) {
-        int start_key = _start_key;
-        int end_key = _end_key;
+    // std::vector<bool> range_query(int _start_key, int _end_key) {
+    //     int start_key = _start_key;
+    //     int end_key = _end_key;
 
-        std::vector<Node*>::iterator it;
-        std::vector<bool> output;
-        bool value = false;
+    //     std::vector<Node*>::iterator it;
+    //     std::vector<bool> output;
+    //     bool value = false;
         
-        Node* node;
-        Node* prev_node;
+    //     Node* node;
+    //     Node* prev_node;
 
-        //first find the start key value
-        Block* block = levels[levels.size() - 1];
+    //     //first find the start key value
+    //     Block* block = levels[levels.size() - 1];
 
-        while(true){
-            while(block) {
-                if(value){break;}
+    //     while(true){
+    //         while(block) {
+    //             if(value){break;}
                 
-                for (it = block->vector.begin(); it != block->vector.end(); ++it) {
-                    node = *it;
-                    if(node->value < start_key){
-                        prev_node = node; 
-                        if(node==*std::prev(block->vector.end())){
-                            block = block->next;
-                            break;
-                        }
-                        else{continue;}
-                    }
-                    else if(node->value == start_key) { 
-                        value = true;
-                        break;
-                    }
-                    else if (start_key < node->value){
-                        block = prev_node->down; 
-                        break;
-                    } 
-                }
-            }
-            output.push_back(value);
-            start_key+=1;
+    //             for (it = block->vector.begin(); it != block->vector.end(); ++it) {
+    //                 node = *it;
+    //                 if(node->value < start_key){
+    //                     prev_node = node; 
+    //                     if(node==*std::prev(block->vector.end())){
+    //                         block = block->next;
+    //                         break;
+    //                     }
+    //                     else{continue;}
+    //                 }
+    //                 else if(node->value == start_key) { 
+    //                     value = true;
+    //                     break;
+    //                 }
+    //                 else if (start_key < node->value){
+    //                     block = prev_node->down; 
+    //                     break;
+    //                 } 
+    //             }
+    //         }
+    //         output.push_back(value);
+    //         start_key+=1;
             
-            if(value){++it; break;}
-            //prevent when the first key is not found
-            //if the first key is not found set the next key is first key
-            else if(start_key == end_key){break;}
-        }
+    //         if(value){++it; break;}
+    //         //prevent when the first key is not found
+    //         //if the first key is not found set the next key is first key
+    //         else if(start_key == end_key){break;}
+    //     }
 
-        //propagates next node until the key is below than end_key
-        //if there is no more blocks the break the loop.
-        int cur_key = start_key;
+    //     //propagates next node until the key is below than end_key
+    //     //if there is no more blocks the break the loop.
+    //     int cur_key = start_key;
 
-        while(block){ 
-            if(cur_key >= end_key) break;
+    //     while(block){ 
+    //         if(cur_key >= end_key) break;
 
-            if(it == block->vector.end()) {
-                block = block->next;
-                it = block->vector.begin();
+    //         if(it == block->vector.end()) {
+    //             block = block->next;
+    //             it = block->vector.begin();
+    //         }
+
+    //         node = *it;
+    //         if(node->value == cur_key){
+    //             value = true;
+    //             ++cur_key;
+    //             ++it;
+    //         }
+    //         else if(node->value > cur_key){
+    //             value = false;
+    //             ++cur_key;
+    //         }
+
+    //         else{
+    //             value = false;
+    //             ++it;
+    //         }
+
+    //         output.push_back(value);
+    //     }
+    //     return output;
+    // }
+
+    std::vector<bool> range_query(int start_key, int end_key) {
+        std::vector<bool> output;
+        for (int key = start_key; key < end_key; key++) {
+            int value = search(key);
+            if (value != -1) {
+                output.push_back(value);
             }
-
-            node = *it;
-            if(node->value == cur_key){
-                value = true;
-                ++cur_key;
-                ++it;
-            }
-            else if(node->value > cur_key){
-                value = false;
-                ++cur_key;
-            }
-
-            else{
-                value = false;
-                ++it;
-            }
-
-            output.push_back(value);
         }
         return output;
     }
