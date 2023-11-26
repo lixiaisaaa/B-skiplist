@@ -134,7 +134,7 @@ public:
         // Destructor to free memory
         // ... (cleanup logic here)
     }
-    // 先写flush操作作为helper，如果超了，那么就发送到下一个block中，如果block满了，标记并加入一个queue， 然后循环处理直到把queue处理完毕
+    // 先写flush操作作为helper，如果超了，那么就发送到下一个block中，如果block满了，标记并加入一个queue， 然后循环处理直到把queue处理完毕(BFS)
     void upsert(int value, int opcode, int lvl)
     {   
         //如果比当前level高，直接变成pivot
