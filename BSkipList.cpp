@@ -78,6 +78,7 @@ public:
     }
 };
 
+// FIX: duplication, leave special case
 class BSkipList
 {
 private:
@@ -206,8 +207,7 @@ private:
     void flush(Block *block)
     {
         // when buffer is full or have enough delete, flush(leaves don't need flush)
-        // block->buffer.size() + block->pivots.size() > B
-        if (block->height > 0 && (block->buffer.size() >= B || block->numberOfDeletedNode * 2 >= B))
+        if (block->height > 0 && (block->buffer.size() + block->pivots.size() > B || block->numberOfDeletedNode * 2 >= B))
         {
             // flush each node in buffer
             for (int i = 0; i < block->buffer.size(); i++)
@@ -218,7 +218,10 @@ private:
                 if (current->opcode == 0 && current->height >= block->height)
                 {
                     down = addToVector(current, block->pivots)->down;
-                    buildForm(current->value, current->height, down);
+                    if (current->value == 9)
+                        cout << down->pivots[0]->value << endl;
+                    Block *newDown = buildForm(current->value, current->height, down);
+                    current->down = newDown;
                     break;
                 }
                 // delete pivot
@@ -462,14 +465,29 @@ public:
 int main()
 {
     BSkipList list;
-    list.upsert(4, 0, 1);
+    list.upsert(5, 0, 1);
+
+    list.upsert(6, 0, 0);
+    list.upsert(8, 0, 0);
     list.upsert(1, 0, 0);
     list.upsert(3, 0, 0);
+    list.upsert(9, 0, 1);
+
+    list.upsert(10, 0, 0);
+
+    list.upsert(12, 0, 0);
+    list.upsert(16, 0, 0);
+    list.upsert(21, 0, 0);
+    list.upsert(30, 0, 0);
+
+    list.upsert(18, 0, 2);
     list.upsert(6, 0, 0);
-    list.upsert(0, 0, 0);
-    list.upsert(8, 0, 0);
-    list.upsert(9, 0, 0);
-    list.upsert(-1, 0, 0);
+    list.upsert(7, 0, 0);
+    list.upsert(30, 0, 0);
+    list.upsert(12, 0, 0);
+    list.upsert(16, 0, 0);
+    list.upsert(21, 0, 0);
+    list.upsert(30, 0, 0);
 
     list.print_list();
     return 0;
