@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <limits.h>
-#include <algorithm>
 
 #define B 6
 using namespace std;
@@ -245,6 +244,9 @@ private:
         Node *prev = nullptr;
         for (int i = 0; i < vector.size(); i++)
         {
+            // remove duplicate
+            if (vector[i]->value == node->value)
+                return prev;
             // in the middle
             if (vector[i]->value > node->value)
             {
@@ -290,14 +292,24 @@ private:
             for (int i = 0; i < block->buffer.size(); i++)
             {
                 Node *current = block->buffer[i];
+                // remove duplicate
                 Block *down;
                 // insert pivot
                 if (current->opcode == 0 && current->height >= block->height)
                 {
-
-                    down = addToVector(current, block->pivots)->down;
-                    Block *newDown = buildForm(current->value, current->height, down);
-                    current->down = newDown;
+                    bool has = false;
+                    // remove duplicate
+                    for (int p = 0; p < block->pivots.size(); p++)
+                    {
+                        if (block->pivots[p]->value == current->value)
+                            has = true;
+                    }
+                    if (!has)
+                    {
+                        down = addToVector(current, block->pivots)->down;
+                        Block *newDown = buildForm(current->value, current->height, down);
+                        current->down = newDown;
+                    }
                     continue;
                 }
                 // delete pivot
@@ -451,15 +463,22 @@ int main()
 {
     BSkipList list;
     list.upsert(10, 0, 1);
+    list.upsert(10, 0, 1);
     list.upsert(2, 0, 1);
     list.upsert(11, 0, 1);
     list.upsert(-1, 0, 0);
+    list.upsert(10, 0, 1);
     list.upsert(10, 1, 1);
     list.upsert(1, 0, 0);
     list.upsert(4, 0, 0);
     list.upsert(5, 0, 0);
     list.upsert(6, 0, 0);
     list.upsert(7, 0, 0);
+    list.upsert(9, 0, 2);
+    list.upsert(4, 1, 0);
+    list.upsert(5, 1, 0);
+    list.upsert(6, 1, 0);
+    list.upsert(7, 1, 0);
 
     list.print_list();
 
