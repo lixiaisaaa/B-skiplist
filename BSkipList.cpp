@@ -74,7 +74,6 @@ public:
     }
 };
 
-// FIX: duplication
 class BSkipList
 {
 private:
@@ -384,7 +383,7 @@ public:
         // top block
         Block *block = levels[levels.size() - 1];
         // promote new node if needed
-        if (height > block->height)
+        if (height > block->height && opcode == 0)
         {
             promote(value, height, block);
             return;
@@ -469,21 +468,25 @@ int main()
     list.upsert(11, 0, 1);
     list.upsert(-1, 0, 0);
     list.upsert(10, 0, 1);
+    list.upsert(6, 0, 3);
+
     list.upsert(10, 0, 1);
     list.upsert(1, 0, 0);
     list.upsert(4, 0, 0);
     list.upsert(5, 0, 0);
-    list.upsert(6, 0, 0);
+    list.upsert(6, 0, 3);
     list.upsert(7, 0, 3);
     list.upsert(9, 0, 2);
+    list.upsert(6, 0, 3);
+
     list.upsert(4, 1, 0);
     list.upsert(5, 1, 0);
-    list.upsert(6, 1, 0);
+    list.upsert(6, 1, 3);
     list.upsert(7, 1, 3);
     list.upsert(1, 0, 0);
     list.upsert(4, 0, 0);
     list.upsert(5, 0, 0);
-    list.upsert(6, 0, 0);
+    list.upsert(6, 1, 3);
 
     list.print_list();
 
