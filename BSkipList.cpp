@@ -1,11 +1,8 @@
 #include <iostream>
 #include <vector>
-#include <stack>
-#include <random>
 #include <limits.h>
-#include <time.h>
-#include <deque>
 #include <algorithm>
+
 #define B 6
 using namespace std;
 class Block;
@@ -78,58 +75,42 @@ public:
     }
 };
 
-// FIX: duplication, leave special case
+// FIX: duplication
 class BSkipList
 {
 private:
     std::vector<Block *> levels; // Vector of head blocks from each level
-    std::stack<Block *> getBlockStack(int value)
+
+    // try find value in a block
+    bool find(int value, Block *block)
     {
-        int lvl = levels.size() - 1;
-        Block *current = levels[levels.size() - 1]; // starting from first block in higest level
-        std::stack<Block *> blocks;                 // store the path
-        Block *block = current;                     // keep track the place for value
-        Node *prev;
-        while (current)
+        if (!block)
+            return false;
+        for (int i = block->buffer.size() - 1; i >= 0; i--)
         {
-            bool found = false;
-            // find a value greater than insert value
-            for (unsigned int i = 0; i < current->pivots.size(); i++)
+            Node *current = block->buffer[i];
+            if (current->value == value)
             {
-                if (value > current->pivots[i]->value)
-                { // go to next node
-                    prev = current->pivots[i];
-                }
+                if (current->opcode == 0)
+                    return true;
                 else
-                { // find the place
-                    blocks.push((block));
-                    current = prev->down;
-                    lvl--;
-                    block = current;
-                    found = true;
-                    break;
-                }
+                    return false;
             }
-            if (!found)
-            {
-                // keep looking in next block
-                if (current->next)
-                {
-                    current = current->next;
-                    // last in current block
-                    if (value < current->pivots[0]->value)
-                    {
-                        blocks.push(block);
-                        current = prev->down;
-                    }
-                }
-                else // last in this level
-                    blocks.push(current);
-                current = prev->down;
-            }
-            block = current;
         }
-        return blocks;
+        Block *prev;
+
+        for (int i = 0; i < block->pivots.size(); i++)
+        {
+            Node *current = block->pivots[i];
+            if (current->value == value)
+                return true;
+            else if (value > current->value)
+                prev = current->down;
+
+            else
+                break;
+        }
+        return find(value, prev);
     }
 
     // build from the block all the way down
@@ -155,6 +136,15 @@ private:
                 newBlock = new Block(NULL, block->next, block->height);
                 newBlock->pivots = right;
                 block->next = newBlock;
+                // copy over buffer if needed
+                for (int j = 0; j < block->buffer.size(); j++)
+                {
+                    if (block->buffer[j]->value > value)
+                    {
+                        newBlock->buffer.push_back(block->buffer[j]);
+                        block->buffer.erase(block->buffer.begin() + j);
+                    }
+                }
                 return newBlock;
             }
             prev = block->pivots[i];
@@ -165,6 +155,15 @@ private:
             lower = buildForm(value, height, prev->down);
         newBlock = new Block(new Node(value, lower, height, 0), block->next, block->height);
         block->next = newBlock;
+        // copy over buffer if needed
+        for (int j = 0; j < block->buffer.size(); j++)
+        {
+            if (block->buffer[j]->value > value)
+            {
+                newBlock->buffer.push_back(block->buffer[j]);
+                block->buffer.erase(block->buffer.begin() + j);
+            }
+        }
         return newBlock;
     }
 
@@ -181,6 +180,62 @@ private:
         {
             Block *newBlock = buildForm(value, height, levels[height - 1]);
             up->pivots.push_back(new Node(value, newBlock, height, 0));
+        }
+    }
+
+    // remove element from the whole list
+    void removeElement(int value)
+    {
+        Block *current = levels[levels.size() - 1];
+        Block *prev;
+        while (current)
+        {
+            for (int i = 0; i < current->pivots.size(); i++)
+            {
+                if (value == current->pivots[i]->value)
+                {
+                    // remove at top level then all the way down
+                    current->pivots.erase(current->pivots.begin() + i);
+                    removeFrom(value, prev);
+                    return;
+                }
+                prev = current->pivots[i]->down;
+            }
+            current = current->pivots[0]->down;
+        }
+    }
+
+    // remove element from block all the way down
+    void removeFrom(int value, Block *prev)
+    {
+        if (!prev)
+        {
+            return;
+        }
+        Block *block = prev->next;
+        // leader
+        if (block->pivots[0]->value == value)
+        {
+            for (int i = 0; i < block->buffer.size(); i++)
+            {
+                prev->buffer.push_back(block->buffer[i]);
+            }
+            prev->next = block->next;
+            prev = prev->pivots[prev->pivots.size() - 1]->down;
+            removeFrom(value, prev);
+        }
+        else
+        {
+            for (int i = 0; i < block->pivots.size(); i++)
+            {
+                if (value == block->pivots[i]->value)
+                {
+                    // remove element from level
+                    block->pivots.erase(block->pivots.begin() + i);
+                    removeFrom(value, prev);
+                }
+                prev = block->pivots[i]->down;
+            }
         }
     }
 
@@ -203,11 +258,33 @@ private:
         return prev;
     }
 
+    // remove blocks only has -infinity as pivot
+    void checkLevel()
+    {
+        bool check = true;
+        while (check)
+        {
+            Block *current = levels[levels.size() - 1];
+            if (current->pivots.size() == 1)
+            {
+                if (current->buffer.empty())
+                    levels.pop_back();
+                else
+                {
+                    flush(current, true);
+                }
+            }
+            else
+                check = false;
+        }
+    }
+
     // flush current block
-    void flush(Block *block)
+    void
+    flush(Block *block, bool flag)
     {
         // when buffer is full or have enough delete, flush(leaves don't need flush)
-        if (block->height > 0 && (block->buffer.size() + block->pivots.size() > B || block->numberOfDeletedNode * 2 >= B))
+        if ((block->height > 0 && (block->buffer.size() + block->pivots.size() > B || block->numberOfDeletedNode * 2 >= B)) || flag)
         {
             // flush each node in buffer
             for (int i = 0; i < block->buffer.size(); i++)
@@ -217,45 +294,53 @@ private:
                 // insert pivot
                 if (current->opcode == 0 && current->height >= block->height)
                 {
+
                     down = addToVector(current, block->pivots)->down;
-                    if (current->value == 9)
-                        cout << down->pivots[0]->value << endl;
                     Block *newDown = buildForm(current->value, current->height, down);
                     current->down = newDown;
-                    break;
+                    continue;
                 }
                 // delete pivot
-                else if (current->opcode == 1)
+                else if (current->opcode == 1 && current->height >= block->height)
                 {
-                    // FIX: delete algorithm
+                    removeElement(current->value);
+                    continue;
                 }
 
                 // find place for message to flush
                 down = block->pivots[0]->down;
-                for (int i = 0; i < block->pivots.size(); i++)
+                for (int j = 0; j < block->pivots.size(); j++)
                 {
-                    if (block->pivots[i]->value <= current->value)
-                        down = block->pivots[i]->down;
+                    if (block->pivots[j]->value <= current->value)
+                        down = block->pivots[j]->down;
                 }
                 // normal case, add to lower buffer
-                if (down->height != 0)
+                if (down->height > 0)
                 {
                     down->buffer.push_back(current);
-                    flush(down);
+                    flush(down, false);
                 }
                 // flush to leave is a speacial case
-                else
+                else if (down->height == 0)
                 {
                     if (current->opcode == 0)
+                    {
                         addToVector(current, down->buffer);
+                    }
                     else
                     {
-                        // FIX delete algorithm
+                        for (int j = 0; j < down->buffer.size(); j++)
+                        {
+                            if (down->buffer[j]->value == current->value)
+                                down->buffer.erase(down->buffer.begin() + j);
+                        }
                     }
                 }
             }
-            // clean the buffer
+            //  clean the buffer
             block->buffer.clear();
+            block->numberOfDeletedNode = 0;
+            checkLevel();
         }
     }
 
@@ -301,7 +386,17 @@ public:
                 Node *newNode = new Node(value, nullptr, height, opcode);
                 addToVector(newNode, block->buffer);
             }
-            // FIX remove algorthim here
+            else
+            {
+                for (int i = 0; i < block->buffer.size(); i++)
+                {
+                    if (block->buffer[i]->value == value)
+                        block->buffer.erase(block->buffer.begin() + i);
+                }
+                // if list is empty
+                if (block->buffer.empty())
+                    levels.clear();
+            }
         }
         else
             // add new node to buffer
@@ -311,7 +406,7 @@ public:
         if (opcode == 1)
             block->numberOfDeletedNode += 1;
         // try flush block
-        flush(block);
+        flush(block, false);
     }
 
     void insert(int value)
@@ -327,79 +422,6 @@ public:
         upsert(value, 1, height);
     }
 
-    void remove2(int value)
-    {
-        std::stack<Block *> blocks = getBlockStack(value);
-        Block *current;
-        Block *block;
-        vector<Block *> update;
-        Block *curr = nullptr;
-        bool flag = false;
-        for (int i = levels.size() - 1; i >= 0; i--)
-        {
-            Block *pre = nullptr;
-            curr = levels[i];
-            while (curr)
-            {
-                for (int j = 0; j < curr->pivots.size(); j++)
-                {
-                    if (curr->pivots[j]->value == value)
-                    {
-                        if (pre)
-                        {
-                            flag = true;
-                            update.push_back(pre);
-                            // cout << pre->vector[0]->value << "pre" << endl;
-                        }
-                        break;
-                    }
-                }
-                if (flag)
-                {
-                    flag = false;
-                    break;
-                }
-
-                pre = curr;
-                curr = curr->next;
-            }
-        }
-
-        int x = 0;
-        while (!blocks.empty())
-        {
-            block = blocks.top();
-            blocks.pop();
-
-            for (unsigned int i = 0; i < block->pivots.size(); i++)
-            {
-                if (block->pivots[i]->value == value)
-                {
-                    Block *downBlock = block->pivots[i]->down;
-                    block->pivots.erase(block->pivots.begin() + i);
-
-                    while (downBlock != nullptr)
-                    {
-                        current = downBlock->pivots[0]->down;
-                        downBlock->pivots.erase(downBlock->pivots.begin());
-                        if (!downBlock->pivots.empty())
-                        {
-                            update[x]->pivots.insert(update[x]->pivots.end(), downBlock->pivots.begin(), downBlock->pivots.end());
-                            update[x]->next = update[x]->next->next;
-                            x++;
-                        }
-                        else
-                        {
-                            update[x]->next = update[x]->next->next;
-                            x++;
-                        }
-                        downBlock = current;
-                    }
-                }
-            }
-        }
-    }
-
     void print_list()
     {
         for (int i = levels.size() - 1; i >= 0; i--)
@@ -409,55 +431,18 @@ public:
         }
     }
 
-    bool search(int key)
+    bool query(int value)
     {
-        std::vector<Node *>::iterator it;
-        Node *node;
-        Node *prev_node;
-        Block *block = levels[levels.size() - 1];
-
-        while (block)
-        {
-            for (it = block->pivots.begin(); it != block->pivots.end(); ++it)
-            {
-                node = *it;
-                if (node->value < key)
-                {
-                    prev_node = node;
-                    if (node == *std::prev(block->pivots.end()))
-                    {
-                        block = block->next;
-                        break;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                else if (node->value == key)
-                {
-                    return true;
-                }
-                else if (key < node->value)
-                {
-                    block = prev_node->down;
-                    break;
-                }
-            }
-        }
-        return false;
+        return find(value, levels[levels.size() - 1]);
     }
 
-    std::vector<bool> range_query(int start_key, int end_key)
+    std::vector<int> range_query(int start, int end)
     {
-        std::vector<bool> output;
-        for (int key = start_key; key < end_key; key++)
+        std::vector<int> output;
+        for (int key = start; key < end; key++)
         {
-            int value = search(key);
-            if (value != -1)
-            {
-                output.push_back(value);
-            }
+            if (query(key))
+                output.push_back(key);
         }
         return output;
     }
@@ -465,30 +450,26 @@ public:
 int main()
 {
     BSkipList list;
-    list.upsert(5, 0, 1);
-
-    list.upsert(6, 0, 0);
-    list.upsert(8, 0, 0);
+    list.upsert(10, 0, 1);
+    list.upsert(2, 0, 1);
+    list.upsert(11, 0, 1);
+    list.upsert(-1, 0, 0);
+    list.upsert(10, 1, 1);
     list.upsert(1, 0, 0);
-    list.upsert(3, 0, 0);
-    list.upsert(9, 0, 1);
-
-    list.upsert(10, 0, 0);
-
-    list.upsert(12, 0, 0);
-    list.upsert(16, 0, 0);
-    list.upsert(21, 0, 0);
-    list.upsert(30, 0, 0);
-
-    list.upsert(18, 0, 2);
+    list.upsert(4, 0, 0);
+    list.upsert(5, 0, 0);
     list.upsert(6, 0, 0);
     list.upsert(7, 0, 0);
-    list.upsert(30, 0, 0);
-    list.upsert(12, 0, 0);
-    list.upsert(16, 0, 0);
-    list.upsert(21, 0, 0);
-    list.upsert(30, 0, 0);
 
     list.print_list();
+
+    std::vector<int> range = list.range_query(-10, 12);
+    for (int i = 0; i < range.size(); i++)
+    {
+        cout << range[i] << ", ";
+    }
+    cout << endl;
+    ;
+
     return 0;
 }
