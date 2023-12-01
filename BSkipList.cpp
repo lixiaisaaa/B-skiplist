@@ -263,21 +263,22 @@ private:
     // remove blocks only has -infinity as pivot
     void checkLevel()
     {
-        bool check = true;
-        while (check)
+        while (true)
         {
             Block *current = levels[levels.size() - 1];
             if (current->pivots.size() == 1)
             {
                 if (current->buffer.empty())
+                {
                     levels.pop_back();
+                }
                 else
                 {
                     flush(current, true);
                 }
             }
             else
-                check = false;
+                break;
         }
     }
 
@@ -352,7 +353,6 @@ private:
             //  clean the buffer
             block->buffer.clear();
             block->numberOfDeletedNode = 0;
-            checkLevel();
         }
     }
 
@@ -419,6 +419,7 @@ public:
             block->numberOfDeletedNode += 1;
         // try flush block
         flush(block, false);
+        checkLevel();
     }
 
     void insert(int value)
@@ -468,17 +469,21 @@ int main()
     list.upsert(11, 0, 1);
     list.upsert(-1, 0, 0);
     list.upsert(10, 0, 1);
-    list.upsert(10, 1, 1);
+    list.upsert(10, 0, 1);
     list.upsert(1, 0, 0);
     list.upsert(4, 0, 0);
     list.upsert(5, 0, 0);
     list.upsert(6, 0, 0);
-    list.upsert(7, 0, 0);
+    list.upsert(7, 0, 3);
     list.upsert(9, 0, 2);
     list.upsert(4, 1, 0);
     list.upsert(5, 1, 0);
     list.upsert(6, 1, 0);
-    list.upsert(7, 1, 0);
+    list.upsert(7, 1, 3);
+    list.upsert(1, 0, 0);
+    list.upsert(4, 0, 0);
+    list.upsert(5, 0, 0);
+    list.upsert(6, 0, 0);
 
     list.print_list();
 
