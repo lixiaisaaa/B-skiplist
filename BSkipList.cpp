@@ -281,10 +281,10 @@ private:
         }
     }
 
-    // flush current block
-    void
-    flush(Block *block, bool flag)
+    // flush current block, return true if deleted top level
+    bool flush(Block *block, bool flag)
     {
+        bool deleted = false;
         // when buffer is full or have enough delete, flush(leaves don't need flush)
         if ((block->height > 0 && (block->buffer.size() + block->pivots.size() > B || block->numberOfDeletedNode * 2 >= B)) || flag)
         {
@@ -316,6 +316,8 @@ private:
                 else if (current->opcode == 1 && current->height >= block->height)
                 {
                     removeElement(current->value);
+                    if (current->height == levels.size() - 1)
+                        deleted = true;
                     continue;
                 }
 
@@ -332,7 +334,7 @@ private:
                     down->buffer.push_back(current);
                     flush(down, false);
                 }
-                // flush to leave is a speacial case
+                // flush to leaves are speacial case
                 else if (down->height == 0)
                 {
                     if (current->opcode == 0)
@@ -353,6 +355,7 @@ private:
             block->buffer.clear();
             block->numberOfDeletedNode = 0;
         }
+        return deleted;
     }
 
 public:
@@ -417,8 +420,8 @@ public:
         if (opcode == 1)
             block->numberOfDeletedNode += 1;
         // try flush block
-        flush(block, false);
-        checkLevel();
+        if (flush(block, false))
+            checkLevel();
     }
 
     void insert(int value)
@@ -486,7 +489,7 @@ int main()
     list.upsert(1, 0, 0);
     list.upsert(4, 0, 0);
     list.upsert(5, 0, 0);
-    list.upsert(6, 1, 3);
+    // list.upsert(6, 1, 3);
 
     list.print_list();
 
