@@ -470,7 +470,7 @@ public:
 
     int random_level(int e)
     {
-        srand(time(NULL));
+        srand(time(0));
         float random_number = static_cast<float>(rand()) / RAND_MAX;
         int N = 32;
         int lvl = 0;
