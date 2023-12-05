@@ -433,7 +433,7 @@ public:
     void insert(int value)
     {
         int height = random_level(value);
-        
+
         upsert(value, 0, height);
     }
 
@@ -467,27 +467,26 @@ public:
         }
         return output;
     }
-
-    int random_level(int e)
+    int random_level(int element)
     {
-        srand(time(0));
-        float random_number = static_cast<float>(rand()) / RAND_MAX;
-        int N = 32;
-        int lvl = 0;
         // Check if e is already in the map
-        auto it = levelMap.find(e);
+        auto it = levelMap.find(element);
         if (it != levelMap.end())
         {
             // If e is found in the map, return the stored level
             return it->second;
         }
-        while (lvl < MAX_LEVEL && random_number < P)
+        int random_level = 0;
+        int seed = time(NULL);
+        static default_random_engine e(seed);
+        static uniform_real_distribution<float> u(0.0, 1.0);
+
+        while (u(e) < P && random_level < MAX_LEVEL)
         {
-            lvl++;
+            random_level++;
         }
-        //cout << random_number << endl;
-        levelMap[e] = lvl;
-        return lvl;
+        levelMap[element] = random_level;
+        return random_level;
     }
 };
 int main()
@@ -529,27 +528,28 @@ int main()
 
     // cout << list.random_level(2) << "random" << endl;
 
-    int testDataSize = 10000;
-    std::vector<int> testData;
-    //testData.reserve(testDataSize);
-    
+    // int testDataSize = 100000;
+    // std::vector<int> testData;
+    // // testData.reserve(testDataSize);
 
-    // Start timing
-    auto start = std::chrono::high_resolution_clock::now();
+    // // Start timing
+    // auto start = std::chrono::high_resolution_clock::now();
 
-    // Perform add operations
-    for(int i = 0; i < testDataSize; ++i) {
-        list.insert(i);
-    }
+    // // Perform add operations
+    // for (int i = 0; i < testDataSize; ++i)
+    // {
+    //     list.insert(i);
+    // }
 
-    // Stop timing
-    auto end = std::chrono::high_resolution_clock::now();
+    // // Stop timing
+    // auto end = std::chrono::high_resolution_clock::now();
 
-    // Calculate duration
-    std::chrono::duration<double> duration = end - start;
-    std::cout << "Time taken to add " << testDataSize << " elements: "
-              << duration.count() << " seconds." << std::endl;
-
+    // // Calculate duration
+    // std::chrono::duration<double> duration = end - start;
+    // std::cout << "Time taken to add " << testDataSize << " elements: "
+    //           << duration.count() << " seconds." << std::endl;
+    for (int i = 0; i < 10; i++)
+        cout << list.random_level(i) << " ";
 
     return 0;
 }
