@@ -528,28 +528,25 @@ int main()
 
     // cout << list.random_level(2) << "random" << endl;
 
-    // int testDataSize = 100000;
-    // std::vector<int> testData;
-    // // testData.reserve(testDataSize);
+    int testDataSize = 100000;
+    
+    // Start timing
+    auto start = std::chrono::high_resolution_clock::now();
 
-    // // Start timing
-    // auto start = std::chrono::high_resolution_clock::now();
+    // Perform add operations
+    for (int i = 0; i < testDataSize; ++i)
+    {
+        list.insert(i);
+    }
 
-    // // Perform add operations
-    // for (int i = 0; i < testDataSize; ++i)
-    // {
-    //     list.insert(i);
-    // }
+    // Stop timing
+    auto end = std::chrono::high_resolution_clock::now();
 
-    // // Stop timing
-    // auto end = std::chrono::high_resolution_clock::now();
-
-    // // Calculate duration
-    // std::chrono::duration<double> duration = end - start;
-    // std::cout << "Time taken to add " << testDataSize << " elements: "
-    //           << duration.count() << " seconds." << std::endl;
-    for (int i = 0; i < 10; i++)
-        cout << list.random_level(i) << " ";
+    // Calculate duration
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Time taken to add " << testDataSize << " elements: "
+              << duration.count() << " seconds." << std::endl;
+  
 
     return 0;
 }
