@@ -6,6 +6,7 @@
 #include <time.h>
 #include <unordered_map>
 #include <chrono>
+#include <math.h>
 #define B 6
 using namespace std;
 class Block;
@@ -84,7 +85,7 @@ private:
     std::vector<Block *> levels; // Vector of head blocks from each level
     std::unordered_map<int, int> levelMap;
     const int MAX_LEVEL = 32;
-    const float P = 1.0 / B;
+    
     // try find value in a block
     bool find(int value, Block *block)
     {
@@ -468,7 +469,8 @@ public:
         return output;
     }
     int random_level(int element)
-    {
+    {   
+        float epi = 0.6;
         // Check if e is already in the map
         auto it = levelMap.find(element);
         if (it != levelMap.end())
@@ -480,9 +482,10 @@ public:
         int seed = time(NULL);
         static default_random_engine e(seed);
         static uniform_real_distribution<float> u(0.0, 1.0);
-
+        float P = 1.0 / pow(B,1-epi);
         while (u(e) < P && random_level < MAX_LEVEL)
-        {
+        {   
+            P = 1.0 / pow(B, epi);
             random_level++;
         }
         levelMap[element] = random_level;
@@ -528,14 +531,23 @@ int main()
 
     // cout << list.random_level(2) << "random" << endl;
 
-    int testDataSize = 100000;
-    
+    int testDataSize = 1000000;
+    // for (int i = 0; i < testDataSize; ++i)
+    // {
+    //     list.insert(i);
+    // }
+    // for (int i = 0; i < testDataSize; ++i)
+    // {   
+        
+    //     list.insert(i);
+    // }
     // Start timing
     auto start = std::chrono::high_resolution_clock::now();
 
     // Perform add operations
     for (int i = 0; i < testDataSize; ++i)
-    {
+    {   
+        
         list.insert(i);
     }
 
