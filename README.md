@@ -10,6 +10,7 @@ Implementing《Write-OptimizedSkipLists》 by MichaelA.Bender, MartínFarach-Col
 
 
 #How you run
+
 g++ -g -std=c++11 -o test WriteOptimizedSkipList.cpp
 
 ./test
