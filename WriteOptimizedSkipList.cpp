@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <chrono>
 #include <math.h>
+#include <thread>
 #define B 6
 using namespace std;
 class Block;
@@ -85,7 +86,7 @@ private:
     std::vector<Block *> levels; // Vector of head blocks from each level
     std::unordered_map<int, int> levelMap;
     const int MAX_LEVEL = 32;
-    
+
     // try find value in a block
     bool find(int value, Block *block)
     {
@@ -469,8 +470,8 @@ public:
         return output;
     }
     int random_level(int element)
-    {   
-        float epi = 0.6;
+    {
+        float epi = 0.5;
         // Check if e is already in the map
         auto it = levelMap.find(element);
         if (it != levelMap.end())
@@ -482,9 +483,9 @@ public:
         int seed = time(NULL);
         static default_random_engine e(seed);
         static uniform_real_distribution<float> u(0.0, 1.0);
-        float P = 1.0 / pow(B,1-epi);
+        float P = 1.0 / pow(B, 1 - epi);
         while (u(e) < P && random_level < MAX_LEVEL)
-        {   
+        {
             P = 1.0 / pow(B, epi);
             random_level++;
         }
@@ -492,64 +493,37 @@ public:
         return random_level;
     }
 };
+
+
 int main()
 {
     BSkipList list;
-    // list.upsert(10, 0, 1);
-    // list.upsert(10, 0, 1);
-    // list.upsert(2, 0, 1);
-    // list.upsert(11, 0, 1);
-    // list.upsert(-1, 0, 0);
-    // list.upsert(10, 0, 1);
-    // list.upsert(6, 0, 3);
-
-    // list.upsert(10, 0, 1);
-    // list.upsert(1, 0, 0);
-    // list.upsert(4, 0, 0);
-    // list.upsert(5, 0, 0);
-    // list.upsert(6, 0, 3);
-    // list.upsert(7, 0, 3);
-    // list.upsert(9, 0, 2);
-    // list.upsert(6, 0, 3);
-
-    // list.upsert(4, 1, 0);
-    // list.upsert(5, 1, 0);
-    // list.upsert(6, 1, 3);
-    // list.upsert(7, 1, 3);
-    // list.upsert(1, 0, 0);
-    // list.upsert(4, 0, 0);
-    // list.upsert(5, 0, 0);
-
-    // list.print_list();
-
-    // std::vector<int> range = list.range_query(-10, 12);
-    // for (int i = 0; i < range.size(); i++)
-    // {
-    //     cout << range[i] << ", ";
-    // }
-    // cout << endl;
 
     // cout << list.random_level(2) << "random" << endl;
 
     int testDataSize = 1000000;
-    // for (int i = 0; i < testDataSize; ++i)
-    // {
-    //     list.insert(i);
-    // }
-    // for (int i = 0; i < testDataSize; ++i)
-    // {   
-        
-    //     list.insert(i);
-    // }
-    // Start timing
-    auto start = std::chrono::high_resolution_clock::now();
-
-    // Perform add operations
     for (int i = 0; i < testDataSize; ++i)
-    {   
-        
+    {
         list.insert(i);
     }
+    int test_duration = 10;
+    // Start the timer thread
+    
+    // Start timing
+    auto start = std::chrono::high_resolution_clock::now();
+    int total_operations = 0;
+    // Perform add operations
+    int seed = time(NULL);
+        static default_random_engine e(seed);
+    for (int i = 0; i < testDataSize; ++i)
+    {   
+        static uniform_int_distribution<int> u(0, 100000);
+        list.query(u(e));
+        
+    }
+
+    // Calculate the throughput: total operations divided by the test duration
+    
 
     // Stop timing
     auto end = std::chrono::high_resolution_clock::now();
@@ -558,7 +532,6 @@ int main()
     std::chrono::duration<double> duration = end - start;
     std::cout << "Time taken to add " << testDataSize << " elements: "
               << duration.count() << " seconds." << std::endl;
-  
 
     return 0;
 }
