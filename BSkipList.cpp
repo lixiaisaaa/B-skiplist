@@ -4,6 +4,9 @@
 #include <random>
 #include <limits.h>
 #include <time.h>
+#include <chrono>
+#include <numeric>   // For std::accumulate
+#include <algorithm> // For std::min_element and std::max_element
 using namespace std;
 class Block;
 
@@ -141,9 +144,9 @@ public:
                 if (block->vector[i]->value > value)
                 { // in the middle of the vector
                     // (static_cast<float>(rand()) / RAND_MAX) < P_FACTOR)
-                    if ((static_cast<float>(rand()) / RAND_MAX) < P_FACTOR)
+                    if (r % 2 != 0)
                     { // tail
-                        //r = r + rand();
+                        r = r + rand();
                         block->vector.insert(block->vector.begin() + i, new Node(value, lower));
                         return;
                     }
@@ -174,7 +177,7 @@ public:
             if (!inserted)
             {
                 // at the end of the vector
-                if ((static_cast<float>(rand()) / RAND_MAX) < P_FACTOR)
+                if (r % 2 != 0)
                 { // tail
                     r = r + 1;
                     block->vector.push_back(new Node(value, lower));
@@ -220,7 +223,7 @@ public:
                         {
                             flag = true;
                             update.push_back(pre);
-                            //cout << pre->vector[0]->value << "pre" << endl;
+                            // cout << pre->vector[0]->value << "pre" << endl;
                         }
                         break;
                     }
@@ -264,11 +267,14 @@ public:
                     {
                         current = downBlock->vector[0]->down;
                         downBlock->vector.erase(downBlock->vector.begin());
-                        if(!downBlock->vector.empty()){
-                            update[x]->vector.insert(update[x]->vector.end(), downBlock->vector.begin(),downBlock->vector.end());
+                        if (!downBlock->vector.empty())
+                        {
+                            update[x]->vector.insert(update[x]->vector.end(), downBlock->vector.begin(), downBlock->vector.end());
                             update[x]->next = update[x]->next->next;
                             x++;
-                        }else{
+                        }
+                        else
+                        {
                             update[x]->next = update[x]->next->next;
                             x++;
                         }
@@ -280,8 +286,9 @@ public:
         }
     }
 
-    void print_list(){
-        Block* curr;
+    void print_list()
+    {
+        Block *curr;
         for (int i = levels.size() - 1; i >= 0; i--)
         {
             Block *pre = nullptr;
@@ -292,7 +299,8 @@ public:
                 {
 
                     cout << curr->vector[j]->value << " ";
-                    if(curr->vector[j]->down){
+                    if (curr->vector[j]->down)
+                    {
                         cout << "(" << curr->vector[j]->down->vector[0]->value << ")";
                     }
                 }
@@ -303,18 +311,21 @@ public:
         }
     }
 
-    void print()
+    std::vector<int> getAverageSize()
     {
-        for (unsigned int i = levels.size() - 1; i >= 0; i--)
+        Block *curr;
+        vector<int> sizes;
+        for (int i = levels.size() - 1; i >= 0; i--)
         {
-            Block *current = levels[i];
-            while (current)
+            Block *pre = nullptr;
+            curr = levels[i];
+            while (curr)
             {
-                current->print();
-                current = current->next;
+                sizes.push_back(curr->vector.size());
+                curr = curr->next;
             }
-            std::cout << std::endl;
         }
+        return sizes;
     }
 
     bool search(int key)
@@ -323,8 +334,6 @@ public:
         Node *node;
         Node *prev_node;
         Block *block = levels[levels.size() - 1];
-
-        
 
         while (block)
         {
@@ -373,58 +382,41 @@ public:
         }
         return output;
     }
-};
 
-void test_search(BSkipList list)
-{
-    // Test Search
-    std::cout << "==========================" << std::endl;
-    std::cout << "Test for search" << std::endl;
-    std::cout << "==========================" << std::endl;
-    std::cout << "Search 1: " << std::boolalpha << list.search(1) << std::endl;
-    std::cout << "Search 3: " << std::boolalpha << list.search(3) << std::endl;
-    std::cout << "Search 4: " << std::boolalpha << list.search(4) << std::endl;
-    std::cout << "Search 10: " << std::boolalpha << list.search(10) << std::endl;
-    std::cout << "Search 5: " << std::boolalpha << list.search(5) << std::endl;
-    std::cout << "Search 14: " << std::boolalpha << list.search(5) << std::endl;
-    std::cout << "Search 2: " << std::boolalpha << list.search(5) << std::endl;
-}
-
-void test_range_query(BSkipList list, int start, int end)
-{
-    // Test Range Query
-    std::vector<bool> rq_output = list.range_query(start, end);
-    std::vector<bool>::iterator it;
-    int i;
-
-    std::cout << "==========================" << std::endl;
-    std::cout << "Test for range search from " << start << " to " << end << std::endl;
-    std::cout << "==========================" << std::endl;
-
-    for (it = rq_output.begin(), i = start; it != rq_output.end() && i < end; it++, i++)
-    {
-        std::cout << "Search " << i << ": " << std::boolalpha << *it << std::endl;
+    int getHeight(){
+        return levels.size();
     }
-}
+};
 
 int main()
 {
     BSkipList list;
-    list.insert(1);
-    list.insert(10);
-    list.insert(3);
-    list.insert(2);
-    list.insert(6);
-    list.insert(11);
-    list.insert(7);
-    list.print_list();
-    list.remove(7);
-    cout << "=========="<<endl;
-    // list.insert(8);
-    // list.insert(-1);
-    // std::cout << list.search(-1) << std::endl;
-    // std::cout << list.search(-2) << std::endl;
-    // std::cout << list.search(11) << std::endl;
-    list.print_list();
+    for (int i = 0; i < 100000; ++i)
+    {
+        list.insert(i);
+    }
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < 100000; ++i)
+    {
+        list.search(i);
+    }
+
+    // Stop timing
+    auto end = std::chrono::high_resolution_clock::now();
+    // Calculate duration
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Time taken to add " << 1000000 << " elements: "
+              << duration.count() << " seconds." << std::endl;
+
+    // vector<int> vec = list.getAverageSize();
+
+    // double average = std::accumulate(vec.begin(), vec.end(), 0.0) / vec.size();
+    // int maxElement = *std::max_element(vec.begin(), vec.end());
+    // int minElement = *std::min_element(vec.begin(), vec.end());
+
+    // std::cout << "Average: " << average << std::endl;
+    // std::cout << "Max: " << maxElement << std::endl;
+    // std::cout << "Min: " << minElement << std::endl;
+    // std::cout << "Height: " << list.getHeight() << std::endl;
     return 0;
 }
